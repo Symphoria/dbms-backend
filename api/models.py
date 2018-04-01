@@ -20,7 +20,7 @@ class User(models.Model):
 class WebsiteData(models.Model):
     url = models.URLField(max_length=200, unique=True, primary_key=True)
     no_of_visitors = models.PositiveIntegerField(default=0)
-    total_usage_hours = models.PositiveIntegerField(default=0)
+    total_usage_hours = models.FloatField(default=0)
     no_of_hits = models.PositiveIntegerField(default=0)
     last_visited = models.DateTimeField(auto_now_add=True)
 

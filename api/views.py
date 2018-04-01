@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from django.contrib.auth.hashers import check_password, make_password
+from .permissions import *
 import jwt
 import os
 import json
@@ -95,3 +96,46 @@ def admin_login(request):
             return Response(json.dumps(payload), status=status.HTTP_200_OK)
 
     return Response({"message": "Username or password is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminWebsiteView(APIView):
+    permission_classes = (IsAdmin,)
+
+    def post(self, request):
+        admin = request.admin
+        website_url = request.data['websiteUrl']
+
+        website_exists = WebsiteData.objects.filter(url=website_url).exists()
+
+        if not website_exists:
+            website = WebsiteData.objects.create(url=website_url)
+        else:
+            website = WebsiteData.objects.filter(url=website_url).first()
+
+        admin_website_exists = AdminWebsite.objects.filter(admin_username=admin, website_url=website).exists()
+
+        if not admin_website_exists:
+            AdminWebsite.objects.create(admin_username=admin, website_url=website)
+
+            return Response({"message": "Website Added"}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({"message": "Website already added"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def get_log(request):
+    visitors = int(request.GET.get('visitors'))
+    website_url = request.GET.get('link')
+    total_time = float(request.GET.get('time'))
+
+    website = WebsiteData.objects.filter(url=website_url).first()
+
+    if website:
+        website.no_of_visitors += visitors
+        website.no_of_hits += 1
+        website.total_usage_hours += total_time
+        website.save()
+    else:
+        WebsiteData.objects.create(url=website_url, no_of_visitors=1, total_usage_hours=total_time, no_of_hits=1)
+
+    return Response("Success", status=status.HTTP_200_OK)
