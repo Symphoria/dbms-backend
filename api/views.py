@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from django.contrib.auth.hashers import check_password, make_password
 from .permissions import *
+from .serializers import *
 import jwt
 import os
 import json
@@ -101,6 +102,18 @@ def admin_login(request):
 class AdminWebsiteView(APIView):
     permission_classes = (IsAdmin,)
 
+    def get(self, request):
+        admin = request.admin
+        websites_urls = AdminWebsite.objects.filter(admin_username=admin).values_list('website_url', flat=True)
+
+        if len(websites_urls) > 0:
+            website_data = WebsiteData.objects.filter(url__in=websites_urls)
+            website_payload = WebsiteSerializer(website_data, many=True).data
+
+            return Response(website_payload, status=status.HTTP_200_OK)
+        else:
+            return Response({"message": "No Websites Added"}, status=status.HTTP_404_NOT_FOUND)
+
     def post(self, request):
         admin = request.admin
         website_url = request.data['websiteUrl']
@@ -120,6 +133,10 @@ class AdminWebsiteView(APIView):
             return Response({"message": "Website Added"}, status=status.HTTP_201_CREATED)
         else:
             return Response({"message": "Website already added"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserWebsiteView(APIView):
+    permission_classes = (IsUser,)
 
 
 @api_view(['GET'])
