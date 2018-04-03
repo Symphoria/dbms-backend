@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from django.contrib.auth.hashers import check_password, make_password
+from django.db.models import Sum
 from .permissions import *
 from .serializers import *
 import jwt
@@ -106,11 +107,27 @@ class AdminWebsiteView(APIView):
         admin = request.admin
         websites_urls = AdminWebsite.objects.filter(admin_username=admin).values_list('website_url', flat=True)
 
-        if len(websites_urls) > 0:
-            website_data = WebsiteData.objects.filter(url__in=websites_urls)
-            website_payload = WebsiteSerializer(website_data, many=True).data
+        payload = []
 
-            return Response(website_payload, status=status.HTTP_200_OK)
+        for website_url in websites_urls:
+            website_data = WebsiteData.objects.filter(url__contains=website_url)
+            website_payload = WebsiteSerializer(website_data, many=True).data
+            total_hits = website_data.aggregate(Sum('no_of_hits'))
+            total_usage_hours = website_data.aggregate(Sum('total_usage_hours'))
+            no_of_visitors = website_data.aggregate(Sum('no_of_visitors'))
+
+            data = {
+                "baseUrl": website_url,
+                "totalHits": total_hits['no_of_hits__sum'],
+                "total_usage_hours": total_usage_hours['total_usage_hours__sum'],
+                "no_of_visitors": no_of_visitors['no_of_visitors__sum'],
+                "details": website_payload
+            }
+
+            payload.append(data)
+
+        if len(payload) > 0:
+            return Response(payload, status=status.HTTP_200_OK)
         else:
             return Response({"message": "No Websites Added"}, status=status.HTTP_404_NOT_FOUND)
 
