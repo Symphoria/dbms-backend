@@ -135,8 +135,30 @@ class AdminWebsiteView(APIView):
             return Response({"message": "Website already added"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserWebsiteView(APIView):
+class KeywordsView(APIView):
     permission_classes = (IsUser,)
+
+    def get(self, request):
+        keyword_list = Keywords.objects.all().values_list('keyword', flat=True).distinct()
+        keyword_list = list(keyword_list)
+
+        return Response(json.dumps(keyword_list), status=status.HTTP_200_OK)
+
+    def post(self, request):
+        website_url = request.data['websiteUrl']
+        keywords = map(lambda x: x.lower(), request.data['keywords'])
+        website = WebsiteData.objects.filter(url=website_url).first()
+
+        if not website:
+            website = WebsiteData.objects.create(url=website_url, no_of_visitors=1, total_usage_hours=1, no_of_hits=1)
+
+        for keyword in keywords:
+            keyword_exists = Keywords.objects.filter(website_url=website, keyword=keyword).exists()
+
+            if not keyword_exists:
+                Keywords.objects.create(website_url=website, keyword=keyword)
+
+        return Response({"message": "Keywords Updated"}, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])
