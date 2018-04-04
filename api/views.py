@@ -195,3 +195,24 @@ def get_log(request):
         WebsiteData.objects.create(url=website_url, no_of_visitors=1, total_usage_hours=total_time, no_of_hits=1)
 
     return Response("Success", status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def get_result(request):
+    keyword = request.GET.get('keyword')
+    websites = Keywords.objects.filter(keyword=keyword.lower())
+
+    if websites.count() > 0:
+        result_list = [
+            (x.website_url.no_of_hits, x.website_url.total_usage_hours, x.website_url.no_of_visitors, x.website_url.url)
+            for x in websites]
+        result_list.sort(reverse=True)
+
+        payload = []
+
+        for element in result_list:
+            payload.append(element[3])
+
+        return Response(payload, status=status.HTTP_200_OK)
+    else:
+        return Response({"message": "Sorry, could not find any matching site"}, status=status.HTTP_404_NOT_FOUND)
