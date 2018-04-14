@@ -189,7 +189,7 @@ class KeywordsView(APIView):
         website = WebsiteData.objects.filter(url=website_url).first()
 
         if not website:
-            website = WebsiteData.objects.create(url=website_url, no_of_visitors=1, total_usage_hours=1, no_of_hits=1)
+            website = WebsiteData.objects.create(url=website_url, no_of_visitors=0, total_usage_hours=0, no_of_hits=0)
 
         for keyword in keywords:
             keyword_exists = Keywords.objects.filter(website_url=website, keyword=keyword).exists()
@@ -233,8 +233,12 @@ def get_result(request):
         payload = []
 
         for element in result_list:
-            payload.append(element[3])
+            payload.append({
+                "url": element[3],
+                "hours": element[1],
+                "hits": element[0]
+            })
 
-        return Response(payload, status=status.HTTP_200_OK)
+        return Response(json.dumps(payload), status=status.HTTP_200_OK)
     else:
         return Response({"message": "Sorry, could not find any matching site"}, status=status.HTTP_404_NOT_FOUND)
