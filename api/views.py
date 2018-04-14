@@ -16,6 +16,10 @@ import os
 import json
 
 
+@api_view(['GET'])
+def hello(request):
+    return Response({"message": "hello"}, status=status.HTTP_200_OK)
+
 @api_view(['POST'])
 def user_register(request):
     username = request.data['username']
@@ -30,8 +34,17 @@ def user_register(request):
     else:
         hashed_password = make_password(password)
         User.objects.create(username=username, password=hashed_password, first_name=first_name, last_name=last_name)
+        jwt_payload = {
+            "username": username,
+            "user_type": "user",
+            "exp": datetime.now() + timedelta(days=7)
+        }
+        auth_token = jwt.encode(jwt_payload, os.environ.get('JWT_SECRET'))
+        payload = {
+            "authToken": auth_token
+        }
 
-        return Response({"message": "User successfully registered"}, status=status.HTTP_201_CREATED)
+        return Response(json.dumps(payload), status=status.HTTP_201_CREATED)
 
 
 @api_view(['POST'])
@@ -48,8 +61,17 @@ def admin_register(request):
     else:
         hashed_password = make_password(password)
         Admin.objects.create(username=username, password=hashed_password, first_name=first_name, last_name=last_name)
+        jwt_payload = {
+            "username": username,
+            "user_type": "admin",
+            "exp": datetime.now() + timedelta(days=7)
+        }
+        auth_token = jwt.encode(jwt_payload, os.environ.get('JWT_SECRET'))
+        payload = {
+            "authToken": auth_token
+        }
 
-        return Response({"message": "User Successfully Registered"}, status=status.HTTP_201_CREATED)
+        return Response(json.dumps(payload), status=status.HTTP_201_CREATED)
 
 
 @api_view(['POST'])
